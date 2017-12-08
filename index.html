@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Alocação Multi-Objetivo de Turmas em Laboratórios</title>
+	<meta charset="UTF8">
+</head>
+<style type='text/css'>
+	#graphDiv, svg {
+		height: 99%;
+		width: 100%;
+		position: absolute;
+	}
+
+	.node-label {
+		  position: absolute;
+		  pointer-events: none;
+		  color: black;
+		  z-index: 10;
+	}
+</style>
+<script type="text/javascript" src="vivagraph.js"></script>
+<script type="text/javascript" src="classes.js"></script>
+<script type="text/javascript" src="utils.js"></script>
+<script type="text/javascript" src="instances.js"></script>
+<script type="text/javascript">
+	function obterMatriz(tamanho) {
+		let matriz = [];
+		for(let i = 0; i < tamanho; i++) {
+			matriz.push([]);
+			for(let j = 0; j < tamanho; j++)
+				matriz[i].push(0);
+		}
+		return matriz;
+	}
+
+	function obterGradeAleatoria(instancia) {
+		let disciplinas = instancia.disciplinas.slice(0).map((d,i) => ({key: i, value: d}));
+		let grade = [];
+		for(let i = 0; i < instancia.qtdDiasAulas; i++) {
+			grade.push([]);
+			for(let j = 0; j < instancia.laboratorios.length; j++) {
+				grade[i].push([]);
+				let ocupacaoDia = 0;
+				let candidatas = disciplinas.filter(disciplina =>
+					disciplina.value.ocupacao > 0
+					&& !grade[i].some(a => a.some(d => d === disciplina.key))
+					&& (!grade[i].some(a => a.some(d => instancia.disciplinas[d].semestre === disciplina.value.semestre
+					&& instancia.disciplinas[d].curso === disciplina.value.curso)
+					|| disciplina.ocupacao % 1 === 0.5))
+				);
+				candidatas.sort(() => Math.random() - .5);
+				//alert(JSON.stringify(grade) + " -> " + JSON.stringify(candidatas.map(c => c.key)));
+				if(ocupacaoDia === instancia.laboratorios.length || !candidatas.length)
+					continue;
+				for(let disciplina of candidatas) {
+					let ocupacao = 1 - disciplina.value.ocupacao % 1;
+					if(ocupacaoDia + ocupacao <= 1) {
+						disciplinas[disciplina.key].value.ocupacao -= ocupacao;
+						grade[i][j].push(disciplina.key);
+						ocupacaoDia += ocupacao;
+					}
+				}
+			}
+		}
+		return grade;
+	}
+
+	function problema(instancia) {
+		let grade = obterGradeAleatoria(instancia);
+
+		let c = document.getElementById("console");
+		let matriz = obterMatriz(instancia.disciplinas.length);
+		for(let comunidade of grade) {
+			c.innerHTML += JSON.stringify(comunidade) + "<br />";
+			for(let i = 0; i < comunidade.length - 1; i++)
+				for(let j = i + 1; j < comunidade.length; j++)
+					comunidade[i].forEach(v1 => comunidade[j].forEach(v2 => matriz[v1][v2] = 1) );
+		}
+		render(matriz, instancia.disciplinas);
+	}
+
+	function render(matriz, disciplinas, solucao = []) {
+		let svg = document.getElementsByTagName("svg");
+		if(svg.length) svg[0].remove();
+		
+		let graph = Viva.Graph.graph();
+		disciplinas.forEach((d, i) => graph.addNode(i, d));
+		for(let i = 0; i < matriz.length; i++)
+			for(let j = 0; j < matriz.length; j++)
+				if(matriz[i][j])
+					graph.addLink(i, j);
+
+		var container = document.getElementById("graphDiv");
+		var spans = container.getElementsByTagName("span");
+		for(let i = spans.length - 1; i >= 0; i--)
+			spans[i].remove();
+
+		var layout = Viva.Graph.Layout.forceDirected(graph, {
+			springLength: 100,
+			springCoeff: 0.0008,
+			dragCoeff: 0.02,
+			gravity: -1.2
+		});
+
+		var labels = Object.create(null);
+		graph.forEachNode(function (node) {
+			var label = document.createElement('span');
+			label.classList.add('node-label');
+			label.innerText = node.id;
+			labels[node.id] = label;
+			container.appendChild(label);
+		});
+
+		var graphics = Viva.Graph.View.webglGraphics();
+		graphics.placeNode(function (ui, pos) {
+			var domPos = {
+				x: pos.x,
+				y: pos.y
+			};
+			graphics.transformGraphToClientCoordinates(domPos);
+			var nodeId = ui.node.id;
+			var labelStyle = labels[nodeId].style;
+			labelStyle.left = domPos.x + 'px';
+			labelStyle.top = domPos.y + 'px';
+		});
+		function WebglCircle(size, color) {
+            this.size = size;
+            this.color = color;
+        }
+		graphics.node((node) => new WebglCircle(12, "0x009ee8"));
+
+		Viva.Graph.View.renderer(graph, {
+			container: container,
+			layout: layout,
+			graphics: graphics
+		}).run();
+	}
+</script>
+<body onload="problema(instancia)">
+	<div id="graphDiv" style="display: inline-block"></div>
+	<div id="console"></div>
+</body>
+</html>
