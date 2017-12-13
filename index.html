@@ -65,16 +65,17 @@
 		return grade;
 	}
 
+    let matriz = obterMatriz(instancia.disciplinas.length);
 	function problema(instancia) {
 		let grade = obterGradeAleatoria(instancia);
 
 		let c = document.getElementById("console");
-		let matriz = obterMatriz(instancia.disciplinas.length);
+		
 		for(let comunidade of grade) {
 			c.innerHTML += JSON.stringify(comunidade) + "<br />";
 			for(let i = 0; i < comunidade.length - 1; i++)
 				for(let j = i + 1; j < comunidade.length; j++)
-					comunidade[i].forEach(v1 => comunidade[j].forEach(v2 => matriz[v1][v2] = 1) );
+					comunidade[i].forEach(v1 => comunidade[j].forEach(v2 => matriz[v1][v2] = matriz[v2][v1] = 1) );
 		}
 		render(matriz, instancia.disciplinas);
 	}
@@ -84,12 +85,41 @@
 		if(svg.length) svg[0].remove();
 		
 		let graph = Viva.Graph.graph();
-		disciplinas.forEach((d, i) => graph.addNode(i, d));
+		disciplinas.forEach((d, i) => graph.addNode(i, d)); //cria nodo
 		for(let i = 0; i < matriz.length; i++)
 			for(let j = 0; j < matriz.length; j++)
-				if(matriz[i][j])
+				if(matriz[i][j]){ //se matriz[i][j] > 0 linka os nodos
+                    //console.log("X: "+i+" Y: "+j+" contem: "+matriz[i][j]); //APAGAR
+                    console.log("Vizinho de "+i+" é "+obterVizinhos(i,matriz));//APAGAR
+                    //console.log("Vizinho de "+j+" é "+obterVizinhos(j,matriz));//APAGAR
 					graph.addLink(i, j);
+                    graph.addLink(j, i); //APAGAR
+                }
+        
+        
+        // Coloração -------------------
+            
+        let vetor = instancia.disciplinas.slice(0).map((d, i) => ({indice: i, laboratorio: null, recursos: d.recursos.length}));
+        vetor.sort((a,b) => b.recursos - a.recursos);
+        var labs = [];
+        
+        labs = instancia.laboratorios.slice(0).map((l, i) => Object.assign({indice: i}, l));
+        //labs.forEach(console.log);
+        let sol = 0;
+        for(let i = 0; i < vetor.length; i++){
+            let disciplina = instancia.disciplinas[vetor[i].indice];
+            let vizinhos = obterVizinhos(vetor[i].indice, matriz);
+            let laboratorios = labs.filter(l => vetor.every(d => !(vizinhos.some(v => v === d.indice) && d.laboratorio === l.indice )));
+            let laboratorio = obterMelhorLaboratorioParaDisciplina(disciplina, laboratorios, instancia.pesoRecurso, instancia.pesoOcupacao);            
+            sol += laboratorio.contribuicao;
+            vetor[i].laboratorio = laboratorio.indice;
+        }
+        
+        console.log(vetor);
 
+        
+        //-------------------
+        
 		var container = document.getElementById("graphDiv");
 		var spans = container.getElementsByTagName("span");
 		for(let i = spans.length - 1; i >= 0; i--)
@@ -123,18 +153,33 @@
 			labelStyle.left = domPos.x + 'px';
 			labelStyle.top = domPos.y + 'px';
 		});
+        
 		function WebglCircle(size, color) {
             this.size = size;
             this.color = color;
         }
-		graphics.node((node) => new WebglCircle(12, "0x009ee8"));
-
+    
+        //-----------------------------------------//-----------------------------------------------//
+    
+		graphics.node((node) => {
+            console.log(node);
+            let cor = vetor.filter(v => v.indice === node.id)[0].laboratorio;
+            console.log(cor, cores[cor]);
+            return new WebglCircle(20, cores[cor]);
+        });
+        
 		Viva.Graph.View.renderer(graph, {
 			container: container,
 			layout: layout,
 			graphics: graphics
 		}).run();
 	}
+    
+    function coloracaoDsatur(){
+        
+
+    }   
+    
 </script>
 <body onload="problema(instancia)">
 	<div id="graphDiv" style="display: inline-block"></div>

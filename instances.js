@@ -46,6 +46,14 @@ var laboratorios = [
 	new Laboratorio(30, [], 'Lab 4')
 ];
 
+// capacidade, recursos, nome
+var cores = [
+	"0xFFFFFF",
+	"0xFF8FFF",
+	"0xAB098C",
+	"0x90B024"
+];
+
 // var disciplinas = [
 // 	// 1º Semestre
 // 	new Disciplina(1, 35, [0], 'Algoritmos e Programacao I', 2),

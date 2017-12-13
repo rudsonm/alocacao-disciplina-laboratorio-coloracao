@@ -28,7 +28,7 @@ function obterMelhorLaboratorioParaDisciplina(disciplina, laboratorios, pesoRecu
 		let contribuicao = obterValorAvaliacao(laboratorio, disciplina, pesoRecurso, pesoOcupacao);		
 		if(contribuicao < melhorLaboratorio.contribuicao) {
 			melhorLaboratorio.contribuicao = contribuicao;
-			melhorLaboratorio.indice = i;
+			melhorLaboratorio.indice = laboratorio.indice;
 		}
 	}
 	return melhorLaboratorio;
