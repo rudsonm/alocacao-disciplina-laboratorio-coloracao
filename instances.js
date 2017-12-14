@@ -48,10 +48,10 @@ var laboratorios = [
 
 // capacidade, recursos, nome
 var cores = [
-	"0xFFFFFF",
-	"0xFF8FFF",
-	"0xAB098C",
-	"0x90B024"
+	"0x0000CD",
+	"0xC71585",
+	"0x7B68EE",
+	"0xBC8F8F"
 ];
 
 // var disciplinas = [
